@@ -146,10 +146,15 @@ export class Secret {
   items: Item[];
 }
 
+export class HostPath {
+  public path: string;
+}
+
 export class Volume {
   public name: string;
   public mountPath: string;
   public secret: Secret;
+  public hostPath: HostPath;
 }
 
 /**
