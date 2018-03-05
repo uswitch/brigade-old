@@ -136,6 +136,22 @@ export class JobDockerMount {
   public enabled: boolean = false;
 }
 
+export class Item {
+  public key: string;
+  public path: string;
+}
+
+export class Secret {
+  public secretName: string;
+  items: Item[];
+}
+
+export class Volume {
+  public name: string;
+  public mountPath: string;
+  public secret: Secret;
+}
+
 /**
  * JObResourceRequest represents request of the resources
  */
@@ -223,6 +239,9 @@ export abstract class Job {
    * pod annotations for the job
    */
   public annotations: { [key: string]: string; } = {};
+
+  /** _podName is set by the runtime. It is the name of the pod.*/
+  public volumes: Volume[];
 
   /** _podName is set by the runtime. It is the name of the pod.*/
   protected _podName: string;
