@@ -6,9 +6,8 @@ import (
 	"io"
 
 	"github.com/spf13/cobra"
+	"github.com/uswitch/brigade/pkg/storage/kube"
 	"gopkg.in/yaml.v2"
-
-	"github.com/Azure/brigade/pkg/storage/kube"
 )
 
 const projectGetUsage = `Get details for a project.

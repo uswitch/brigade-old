@@ -5,7 +5,7 @@ import (
 
 	"time"
 
-	"github.com/Azure/brigade/pkg/brigade"
+	"github.com/uswitch/brigade/pkg/brigade"
 )
 
 // Store represents a storage engine for a Project.
