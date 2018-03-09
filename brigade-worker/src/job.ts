@@ -190,6 +190,8 @@ export class Vault {
   public cluster: string;
   public databases: Database[];
   public loginPath: string;
+  public completedPath: string;
+  public templateName: string;
   public vaultAddr: string;
 }
 
