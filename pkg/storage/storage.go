@@ -2,7 +2,6 @@ package storage
 
 import (
 	"io"
-
 	"time"
 
 	"github.com/uswitch/brigade/pkg/brigade"

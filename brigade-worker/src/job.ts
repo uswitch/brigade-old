@@ -297,11 +297,6 @@ export abstract class Job {
   public docker: JobDockerMount;
 
   /**
-   * pod annotations for the job
-   */
-  public annotations: { [key: string]: string; } = {};
-
-  /**
    * volumes holds the configuration for volumes to be mounted onto the job's container.
    */
   public volumes: Volume[];
