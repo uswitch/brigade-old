@@ -1,49 +1,81 @@
-{{ if .Values.gw.enabled }}
-{{ $fullname := include "brigade.gw.fullname" . }}
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $fullname }}
+  creationTimestamp: null
   labels:
     app: {{ template "brigade.fullname" . }}
-    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+    chart: '{{ .Chart.Name }}-{{ .Chart.Version }}'
+    heritage: '{{ .Release.Service }}'
+    release: '{{ .Release.Name }}'
     role: gateway
     type: github
+  name: {{ $fullname }}
 spec:
+  progressDeadlineSeconds: 2147483647
   replicas: 1
+  revisionHistoryLimit: 2147483647
+  selector:
+    matchLabels:
+      app: {{ template "brigade.fullname" . }}
+      role: gateway
+      type: github
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
   template:
     metadata:
+      creationTimestamp: null
       labels:
         app: {{ template "brigade.fullname" . }}
         role: gateway
         type: github
     spec:
-      serviceAccountName: {{ $fullname }}
       containers:
-      - name: {{ .Chart.Name }}
-        image: "{{ .Values.gw.registry }}/{{ .Values.gw.name }}:{{ default .Chart.AppVersion .Values.gw.tag }}"
-        imagePullPolicy: {{ default "IfNotPresent" .Values.gw.pullPolicy }}
-        ports:
-        - containerPort: {{ .Values.service.internalPort }}
+      - env:
+        - name: BRIGADE_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: BRIGADE_GATEWAY_PORT
+          value: {{ .Values.service.internalPort | quote }}
+        - name: BRIGADE_AUTHORS
+        image: '{{ .Values.gw.registry }}/{{ .Values.gw.name }}:{{ default .Chart.AppVersion
+          .Values.gw.tag }}'
+        imagePullPolicy: {{ default "IfNotPresent" .Values.gw.pullPolicy
+          }}
         livenessProbe:
+          failureThreshold: 3
           httpGet:
             path: /healthz
-            port: {{ .Values.service.internalPort }}
+            port: 92427454
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: {{ .Chart.Name }}
+        ports:
+        - containerPort: 92427454
+          protocol: TCP
         readinessProbe:
+          failureThreshold: 3
           httpGet:
             path: /healthz
-            port: {{ .Values.service.internalPort }}
-        env:
-          - name: BRIGADE_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-          - name: BRIGADE_GATEWAY_PORT
-            value: {{ .Values.service.internalPort | quote }}
-          - name: BRIGADE_AUTHORS
-            value: {{ if .Values.gw.allowedAuthorRoles }}{{ join "," .Values.gw.allowedAuthorRoles | quote }}{{ end }}
-      {{ if .Values.privateRegistry }}imagePullSecrets:
-        - name: {{.Values.privateRegistry}}{{ end }}
-{{ end }}
+            port: 92427454
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: {{ $fullname }}
+      serviceAccountName: {{ $fullname }}
+      terminationGracePeriodSeconds: 30
+status: {}
