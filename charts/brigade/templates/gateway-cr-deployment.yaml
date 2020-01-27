@@ -43,7 +43,6 @@ spec:
               fieldPath: metadata.namespace
       {{ if .Values.privateRegistry }}imagePullSecrets:
         - name: {{.Values.privateRegistry}}{{ end }}
-{{ end }}
         image: "{{ .Values.cr.registry }}/{{ .Values.cr.name }}:{{ default .Chart.AppVersion .Values.cr.tag }}"
         imagePullPolicy: {{ default "IfNotPresent" .Values.cr.pullPolicy }}
         livenessProbe:
@@ -79,3 +78,4 @@ spec:
       serviceAccountName: {{ $fullname }}
       terminationGracePeriodSeconds: 30
 status: {}
+{{ end }}
