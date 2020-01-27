@@ -1,12 +1,14 @@
+{{ if .Values.cr.enabled }}
+{{ $fullname := include "brigade.cr.fullname" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
   labels:
     app: {{ template "brigade.fullname" . }}
-    chart: '{{ .Chart.Name }}-{{ .Chart.Version }}'
-    heritage: '{{ .Release.Service }}'
-    release: '{{ .Release.Name }}'
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    heritage: "{{ .Release.Service }}"
+    release: "{{ .Release.Name }}"
     role: gateway
     type: dockerhub
   name: {{ $fullname }}
@@ -39,28 +41,29 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: '{{ .Values.cr.registry }}/{{ .Values.cr.name }}:{{ default .Chart.AppVersion
-          .Values.cr.tag }}'
-        imagePullPolicy: {{ default "IfNotPresent" .Values.cr.pullPolicy
-          }}
+      {{ if .Values.privateRegistry }}imagePullSecrets:
+        - name: {{.Values.privateRegistry}}{{ end }}
+{{ end }}
+        image: "{{ .Values.cr.registry }}/{{ .Values.cr.name }}:{{ default .Chart.AppVersion .Values.cr.tag }}"
+        imagePullPolicy: {{ default "IfNotPresent" .Values.cr.pullPolicy }}
         livenessProbe:
           failureThreshold: 3
           httpGet:
             path: /healthz
-            port: 92427454
+            port: {{ .Values.cr.service.internalPort }}
             scheme: HTTP
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 1
         name: {{ .Chart.Name }}
         ports:
-        - containerPort: 92427454
+        - containerPort: {{ .Values.cr.service.internalPort }}
           protocol: TCP
         readinessProbe:
           failureThreshold: 3
           httpGet:
             path: /healthz
-            port: 92427454
+            port: {{ .Values.cr.service.internalPort }}
             scheme: HTTP
           periodSeconds: 10
           successThreshold: 1

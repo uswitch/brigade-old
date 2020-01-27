@@ -1,12 +1,14 @@
+{{ if .Values.gw.enabled }}
+{{ $fullname := include "brigade.gw.fullname" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
   labels:
     app: {{ template "brigade.fullname" . }}
-    chart: '{{ .Chart.Name }}-{{ .Chart.Version }}'
-    heritage: '{{ .Release.Service }}'
-    release: '{{ .Release.Name }}'
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    heritage: "{{ .Release.Service }}"
+    release: "{{ .Release.Name }}"
     role: gateway
     type: github
   name: {{ $fullname }}
@@ -42,28 +44,30 @@ spec:
         - name: BRIGADE_GATEWAY_PORT
           value: {{ .Values.service.internalPort | quote }}
         - name: BRIGADE_AUTHORS
-        image: '{{ .Values.gw.registry }}/{{ .Values.gw.name }}:{{ default .Chart.AppVersion
-          .Values.gw.tag }}'
-        imagePullPolicy: {{ default "IfNotPresent" .Values.gw.pullPolicy
-          }}
+          value: {{ if .Values.gw.allowedAuthorRoles }}{{ join "," .Values.gw.allowedAuthorRoles | quote }}{{ end }}
+      {{ if .Values.privateRegistry }}imagePullSecrets:
+        - name: {{.Values.privateRegistry}}{{ end }}
+{{ end }}
+        image: "{{ .Values.gw.registry }}/{{ .Values.gw.name }}:{{ default .Chart.AppVersion .Values.gw.tag }}"
+        imagePullPolicy: {{ default "IfNotPresent" .Values.gw.pullPolicy }}
         livenessProbe:
           failureThreshold: 3
           httpGet:
             path: /healthz
-            port: 92427454
+            port: {{ .Values.service.internalPort }}
             scheme: HTTP
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 1
         name: {{ .Chart.Name }}
         ports:
-        - containerPort: 92427454
+        - containerPort: {{ .Values.service.internalPort }}
           protocol: TCP
         readinessProbe:
           failureThreshold: 3
           httpGet:
             path: /healthz
-            port: 92427454
+            port: {{ .Values.service.internalPort }}
             scheme: HTTP
           periodSeconds: 10
           successThreshold: 1
