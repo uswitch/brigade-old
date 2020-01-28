@@ -1,45 +1,81 @@
 {{ if .Values.cr.enabled }}
 {{ $fullname := include "brigade.cr.fullname" . }}
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ $fullname }}
+  creationTimestamp: null
   labels:
     app: {{ template "brigade.fullname" . }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
-    release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
+    release: "{{ .Release.Name }}"
     role: gateway
     type: dockerhub
+  name: {{ $fullname }}
 spec:
+  progressDeadlineSeconds: 2147483647
   replicas: 1
+  revisionHistoryLimit: 2147483647
+  selector:
+    matchLabels:
+      app: {{ template "brigade.fullname" . }}
+      role: gateway
+      type: dockerhub
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
   template:
     metadata:
+      creationTimestamp: null
       labels:
         app: {{ template "brigade.fullname" . }}
         role: gateway
         type: dockerhub
     spec:
-      serviceAccountName: {{ $fullname }}
       containers:
-      - name: {{ .Chart.Name }}
-        image: "{{ .Values.cr.registry }}/{{ .Values.cr.name }}:{{ default .Chart.AppVersion .Values.cr.tag }}"
-        imagePullPolicy: {{ default "IfNotPresent" .Values.cr.pullPolicy }}
-        ports:
-        - containerPort: {{ .Values.cr.service.internalPort }}
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: {{ .Values.cr.service.internalPort }}
-        readinessProbe:
-          httpGet:
-            path: /healthz
-            port: {{ .Values.cr.service.internalPort }}
-        env:
-          - name: BRIGADE_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
+      - env:
+        - name: BRIGADE_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
       {{ if .Values.privateRegistry }}imagePullSecrets:
         - name: {{.Values.privateRegistry}}{{ end }}
+        image: "{{ .Values.cr.registry }}/{{ .Values.cr.name }}:{{ default .Chart.AppVersion .Values.cr.tag }}"
+        imagePullPolicy: {{ default "IfNotPresent" .Values.cr.pullPolicy }}
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: {{ .Values.cr.service.internalPort }}
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: {{ .Chart.Name }}
+        ports:
+        - containerPort: {{ .Values.cr.service.internalPort }}
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: {{ .Values.cr.service.internalPort }}
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: {{ $fullname }}
+      serviceAccountName: {{ $fullname }}
+      terminationGracePeriodSeconds: 30
+status: {}
 {{ end }}
